@@ -252,7 +252,7 @@ class Sim:
             o = self.pos[1 - i]
             p = self.pos[i]
             self.ang[i] = math.atan2(o[1] - p[1], o[0] - p[0])
-            self.sd[i] -= dt
+            self.cd[i] -= dt
             if inps[i][2] and self.cd[i] <= 0 and len(self.bul) < 60:
                 a = self.ang[i]
                 self.bul.append([p[0] + math.cos(a) * 20, p[1] + math.sin(a) * 20,
@@ -267,7 +267,7 @@ class Sim:
                 continue
             tgt = 1 - b[4]
             if math.hypot(b[0] - self.pos[tgt][0], b[1] - self.pos[tgt][1]) < SHIP_R + 4:
-                self.hp[tgt] -= BULLLET_DAMAGE
+                self.hp[tgt] -= BULLET_DAMAGE
                 continue
             alive.append(b)
         self.bul = alive
@@ -289,7 +289,7 @@ class Sim:
         return {
             "p": [[round(self.pos[i][0]), round(self.pos[i][1]), max(0, self.hp[i]),
                    self.score[i], round(self.ang[i], 2)] for i in (0, 1)],
-            "b": [[round(b[0]), round(b[1]), b[4]] for b in self.bul],
+            "bt": [[round(b[0]), round(b[1]), b[4]] for b in self.bul],
             "m": self.msg,
         }
         
@@ -415,6 +415,8 @@ class App:
             self.my_ip = get_local_ip()
             self.net = Net()
             self.net.start_host(self.code)
+            self.last_state = None
+            self.touches.clear()
             self.me = 0
             self.msg = ""
             self.state = "host_wait"
@@ -426,7 +428,7 @@ class App:
             self.state = "menu"
         elif act == "field_ip":
             self.field = "ip"
-        elif act == "field code":
+        elif act == "field_code":
             self.field = "code"
         elif act == "connect":
             ip, code = self.ip_text.strip(), self.code_text.strip()
@@ -436,6 +438,8 @@ class App:
             self.close_net()
             self.net = Net()
             self.net.start_join(ip, code)
+            self.last_state = None
+            self.touches.clear()
             self.me = 1
             self.msg = ""
             self.state = "joining"
@@ -491,7 +495,7 @@ class App:
                 self.close_net()
                 self.state = "join"
             elif self.net.connected:
-                self.state == "play"
+                self.state = "play"
         elif self.state == "play":
             now = time.time()
             if not self.net.connected:
@@ -553,7 +557,7 @@ class App:
             self.text("Waiting for host...", self.f_mid, WHITE, center=(W // 2, H // 2))
             return 
         for bx, by, owner in st["bt"]:
-            pygame.draw.circle(c, PCOL[owner], (bx, by), 2)
+            pygame.draw.circle(c, PCOL[owner], (bx, by), 5)
             pygame.draw.circle(c, WHITE, (bx, by), 2)
         for i, (x, y, hp, score, ang) in enumerate(st["p"]):
             self.draw_ship(x, y, ang, PCOL[i], i == self.me)
